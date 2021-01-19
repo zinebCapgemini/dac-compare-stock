@@ -22,9 +22,6 @@ const config_atomic = {
     password: ''
 }
 
-const countries = ['AT', 'AU' ,'BE', 'CA', 'CH', 'CN', 'CZ', 'DE', 'DH',
-    'DK','ES','FI','FR', 'HK', 'IE', 'IT', 'JP', 'KR','LU',
-    'MO', 'MY', 'NL', 'NO', 'PL', 'PT', 'RI', 'SE', 'SG', 'TW', 'UK', 'US']
 try {
     Promise.all([getDataAtomic(), getDataFlat()]).then((values) => {
         console.log('Comparaison product_availability & sku_country');
@@ -158,7 +155,7 @@ function addCSVDiff(arrayHeader, arrayData, delimiter, fileName) {
         let dateAtomic =  row.last_update_atomic ? dateformat(new Date(row.last_update_atomic), 'yyyy-mm-dd h:MM:ss') : '';
         let dateFlat =  row.last_update_flat ? dateformat(new Date(row.last_update_flat), 'yyyy-mm-dd h:MM:ss') : '';
 
-        csvHeader += row.sku + delimiter + row.stock_flat + delimiter + row.stock_atomic + delimiter + dateFlat
+        csvHeader += row.sku + delimiter + row.country  + delimiter + row.stock_flat + delimiter + row.stock_atomic + delimiter + dateFlat
             + delimiter + dateAtomic +  "\n";
     });
     console.log('File Writing comparaison file ....');
