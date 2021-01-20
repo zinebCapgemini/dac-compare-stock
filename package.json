@@ -3,7 +3,6 @@
   "version": "0.1.0",
   "description": "compare stock",
   "main": "index.js",
-  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test \" && exit 1"
   },

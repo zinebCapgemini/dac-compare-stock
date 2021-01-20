@@ -1,11 +1,10 @@
 /**
  * Sets the configuration and initializes the DB isConnected.
  */
-import {createConnection} from "mysql";
-import fs from 'fs'
-import dateformat from 'dateformat';
+const mysql = require('mysql');
+const fs = require('fs');
+const dateformat = require('dateformat');
 
-// add flat configuration
 const config_flat = {
     host: 'localhost',
     database: '',
@@ -64,7 +63,7 @@ try {
 
 async function  getDataAtomic(){
     return new Promise( (resolve, reject) => {
-        let atomicConnection = createConnection({
+        let atomicConnection = mysql.createConnection({
             host: config_atomic.host,
             port: config_atomic.port,
             user: config_atomic.user,
@@ -105,7 +104,7 @@ async function  getDataAtomic(){
 
 async function  getDataFlat(){
     return new Promise( (resolve, reject) => {
-        let flatConnection = createConnection({
+        let flatConnection = mysql.createConnection({
             host: config_flat.host,
             port: config_flat.port,
             user: config_flat.user,
