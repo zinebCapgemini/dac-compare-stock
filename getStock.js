@@ -32,7 +32,7 @@ try {
         resultFlat.forEach(rowSkucountry => {
             let elemExist  = resultAtomic.find(atomic => atomic.sku === rowSkucountry.sku && atomic.country === rowSkucountry.country);
 
-            if (elemExist && elemExist.stock_ecom !== rowSkucountry.stock_ecom){
+            if (elemExist && ( elemExist.stock_ecom !== rowSkucountry.stock_ecom || elemExist.publication_status !== rowSkucountry.publication_status)){
                 resultDiff.push({
                     'sku' : rowSkucountry.sku,
                     'country' : rowSkucountry.country,
@@ -40,11 +40,13 @@ try {
                     'stock_atomic' : elemExist.stock_ecom,
                     'last_update_flat' : rowSkucountry.last_update,
                     'last_update_atomic' : elemExist.last_update,
+                    'publication_status_atomic' : elemExist.publication_status,
+                    'publication_status_flat' : rowSkucountry.publication_status
                 });
             }
         });
         let resultDiffA = [];
-        addCSVDiff(['sku', 'country', 'stock_flat', 'stock_atomic', 'last_update_flat', 'last_update_atomic'], resultDiff, ';', 'diff.csv');
+        addCSVDiff(['sku', 'country', 'stock_flat', 'stock_atomic', 'last_update_flat', 'last_update_atomic', 'publication_status_atomic', 'publication_status_flat'], resultDiff, ';', 'diff.csv');
         resultAtomic.forEach(atomic => {
             let elemExist  = resultFlat.find(flat => flat.sku === atomic.sku && flat.country === atomic.country);
             if (elemExist === undefined){
@@ -79,12 +81,12 @@ async function  getDataAtomic(){
             atomicConnection.query('' +
                 'SELECT sku, \n' +
                 '\n' +
-                '(JSON_EXTRACT(data, "$.has_stock") = "1" \n' +
-                'AND JSON_EXTRACT(data, "$.is_sellable") = "1"\n' +
+                'JSON_EXTRACT(data, "$.has_stock") = "1" as stock_ecom , \n' +
+                ' ( JSON_EXTRACT(data, "$.is_sellable") = "1"\n' +
                 'AND JSON_EXTRACT(data, "$.is_visible") = "1"\n' +
                 'AND JSON_EXTRACT(data, "$.is_searchable") = "1"\n' +
                 '\n' +
-                ') as stock_ecom\n' +
+                ') as publication_status\n' +
                 ', country_code as country ,last_update \n' +
                 ' FROM  ' +
                 ' product_availability where country_code = "FR" ' +
@@ -93,7 +95,7 @@ async function  getDataAtomic(){
                     if (err) throw err;
                     resultAtomic = result;
                     console.log('Get ' + result.length +  ' elements from atomic database');
-                    addCSV(['sku', 'country', 'stock', 'last_update'], resultAtomic, ';', 'atomic.csv');
+                    addCSV(['sku', 'country', 'stock', 'last_update', 'publication_status'], resultAtomic, ';', 'atomic.csv');
                     resolve(resultAtomic);
                 });
         });
@@ -118,7 +120,7 @@ async function  getDataFlat(){
             console.log('Query flat en cours');
             if (err) throw err;
             flatConnection.query('select sku , ecom_stock_availability as stock_ecom ' +
-                ' , country , last_update_ecom_stock as last_update \n' +
+                ' , country , last_update_ecom_stock as last_update \n , publication_status ' +
                 ' FROM \n' +
                 'sku_country \n' +
                 'where country  = \'FR\'\n' +
@@ -127,7 +129,7 @@ async function  getDataFlat(){
                 if (err) throw err;
                 resultFlat = result;
                 console.log('Get ' + result.length +  ' elements from flat database');
-                addCSV(['sku', 'country', 'stock', 'last_update'], result, ';', 'flat.csv');
+                addCSV(['sku', 'country', 'stock', 'last_update', 'publication_status'], result, ';', 'flat.csv');
                 resolve(resultFlat);
             });
         });
@@ -140,7 +142,7 @@ function addCSV(arrayHeader, arrayData, delimiter, fileName) {
     arrayData.forEach(row => {
         let date =  row.last_update ? dateformat(new Date(row.last_update), 'yyyy-mm-dd h:MM:ss') : '';
         csvHeader += row.sku + delimiter + row.stock_ecom + delimiter + row.country
-            + delimiter + date +  "\n";
+            + delimiter + date +  delimiter  +  row.publication_status +  "\n";
     });
     console.log('File Writing ....');
     fs.writeFileSync(fileName, csvHeader);
@@ -156,7 +158,7 @@ function addCSVDiff(arrayHeader, arrayData, delimiter, fileName) {
         let dateFlat =  row.last_update_flat ? dateformat(new Date(row.last_update_flat), 'yyyy-mm-dd h:MM:ss') : '';
 
         csvHeader += row.sku + delimiter + row.country  + delimiter + row.stock_flat + delimiter + row.stock_atomic + delimiter + dateFlat
-            + delimiter + dateAtomic +  "\n";
+            + delimiter + dateAtomic + delimiter + row.publication_status_atomic + delimiter + row.publication_status_flat + "\n";
     });
     console.log('File Writing comparaison file ....');
     fs.writeFileSync(fileName, csvHeader);
