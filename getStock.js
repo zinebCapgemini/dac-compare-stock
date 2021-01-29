@@ -53,6 +53,7 @@ try {
             }
         });
         addCSV(['sku', 'country', 'stock', 'last_update'], resultDiffA, ';', 'diff_not_exist_flat.csv');
+        process.exit(1);
     });
 
 } catch
