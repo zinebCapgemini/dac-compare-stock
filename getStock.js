@@ -47,7 +47,7 @@ try {
         });
         let resultDiffA = [];
         addCSVDiff(['sku', 'country', 'stock_flat', 'stock_atomic', 'last_update_flat', 'last_update_atomic', 'publication_status_atomic', 'publication_status_flat'], resultDiff, ';', 'diff.csv');
-        addCSVSkuEcomFormated(['sku'], resultDiff, ';', 'diff_ecom_format.csv');
+        addCSVSkuFormated(['sku'], resultDiff, ';', 'diff_ecom_format.csv');
         resultAtomic.forEach(atomic => {
             let elemExist  = resultFlat.find(flat => flat.sku === atomic.sku && flat.country === atomic.country);
             if (elemExist === undefined){
@@ -165,7 +165,7 @@ async function  getDataRetailFlat(){
                 resultDiffRetail = result;
                 console.log('Get ' + result.length +  ' retail elements from flat database');
                 addCSVDiffRetail(['sku'], result, ';', 'diff_retail.csv');
-                addCSVSkuRetailFormated(['sku'], result, ';', 'diff_retail_format.csv');
+                addCSVSkuFormated(['sku'], result, ';', 'diff_retail_format.csv');
                 resolve(resultDiffRetail);
             });
         });
@@ -214,19 +214,7 @@ function addCSVDiffRetail(arrayHeader, arrayData, delimiter, fileName) {
 
 }
 
-function addCSVSkuRetailFormated(arrayHeader, arrayData, delimiter, fileName) {
-    let csvHeader = arrayHeader.join(delimiter) + '\n';
-    arrayData.forEach(row => {
-        csvHeader += row.sku_format + "\n";
-    });
-    console.log('File Writing comparaison file ....');
-    fs.writeFileSync(fileName, csvHeader);
-    console.log('File Writing comparaison file OK');
-    return true;
-
-}
-
-function addCSVSkuEcomFormated(arrayHeader, arrayData, delimiter, fileName) {
+function addCSVSkuFormated(arrayHeader, arrayData, delimiter, fileName) {
     let csvHeader = arrayHeader.join(delimiter) + '\n';
     arrayData.forEach(row => {
         csvHeader += row.sku_format + "\n";
