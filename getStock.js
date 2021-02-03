@@ -22,7 +22,7 @@ const config_atomic = {
 }
 
 try {
-    Promise.all([getDataAtomic(), getDataFlat()]).then((values) => {
+    Promise.all([getDataAtomic(), getDataFlat(), getDataRetailFlat()]).then((values) => {
         console.log('Comparaison product_availability & sku_country');
         let resultAtomic = values[0]
         let resultFlat = values[1];
@@ -40,12 +40,14 @@ try {
                     'last_update_flat' : rowSkucountry.last_update,
                     'last_update_atomic' : elemExist.last_update,
                     'publication_status_atomic' : elemExist.publication_status,
-                    'publication_status_flat' : rowSkucountry.publication_status
+                    'publication_status_flat' : rowSkucountry.publication_status,
+                    'sku_format' : "\"" + rowSkucountry.sku  +  "\"" + ","
                 });
             }
         });
         let resultDiffA = [];
         addCSVDiff(['sku', 'country', 'stock_flat', 'stock_atomic', 'last_update_flat', 'last_update_atomic', 'publication_status_atomic', 'publication_status_flat'], resultDiff, ';', 'diff.csv');
+        addCSVSkuEcomFormated(['sku'], resultDiff, ';', 'diff_ecom_format.csv');
         resultAtomic.forEach(atomic => {
             let elemExist  = resultFlat.find(flat => flat.sku === atomic.sku && flat.country === atomic.country);
             if (elemExist === undefined){
@@ -136,6 +138,39 @@ async function  getDataFlat(){
     });
 }
 
+async function  getDataRetailFlat(){
+    return new Promise( (resolve, reject) => {
+        let flatConnection = mysql.createConnection({
+            host: config_flat.host,
+            port: config_flat.port,
+            user: config_flat.user,
+            password: config_flat.password,
+            database: config_flat.database
+        });
+        console.log('Connexion à la base flat en cours pour le stock retail');
+        let resultDiffRetail = [];
+
+        flatConnection.connect(function (err) {
+            console.log('Connexion à la base flat OK');
+            console.log('Query retail flat en cours');
+            if (err) throw err;
+            flatConnection.query('select sku_country.sku, CONCAT(\'"\', sku_country.sku, \'"\', \',\') as sku_format' +
+                ' FROM \n' +
+                'sku_country \n' +
+                'INNER JOIN product ON product.sku = sku_country.sku \n' +
+                'where sku_country.country  = \'FR\' and product.country = "FR" \n' +
+                ' AND sku_country.retail_stock_availability !=  IF(JSON_EXTRACT(product.data, "$.stock.retail") = true, 1, 0) \n' +
+                'order by sku;', function (err, result, fields) {
+                if (err) throw err;
+                resultDiffRetail = result;
+                console.log('Get ' + result.length +  ' retail elements from flat database');
+                addCSVDiffRetail(['sku'], result, ';', 'diff_retail.csv');
+                addCSVSkuRetailFormated(['sku'], result, ';', 'diff_retail_format.csv');
+                resolve(resultDiffRetail);
+            });
+        });
+    });
+}
 
 function addCSV(arrayHeader, arrayData, delimiter, fileName) {
     let csvHeader = arrayHeader.join(delimiter) + '\n';
@@ -159,6 +194,42 @@ function addCSVDiff(arrayHeader, arrayData, delimiter, fileName) {
 
         csvHeader += row.sku + delimiter + row.country  + delimiter + row.stock_flat + delimiter + row.stock_atomic + delimiter + dateFlat
             + delimiter + dateAtomic + delimiter + row.publication_status_atomic + delimiter + row.publication_status_flat + "\n";
+    });
+    console.log('File Writing comparaison file ....');
+    fs.writeFileSync(fileName, csvHeader);
+    console.log('File Writing comparaison file OK');
+    return true;
+
+}
+
+function addCSVDiffRetail(arrayHeader, arrayData, delimiter, fileName) {
+    let csvHeader = arrayHeader.join(delimiter) + '\n';
+    arrayData.forEach(row => {
+        csvHeader += row.sku + "\n";
+    });
+    console.log('File Writing comparaison file ....');
+    fs.writeFileSync(fileName, csvHeader);
+    console.log('File Writing comparaison file OK');
+    return true;
+
+}
+
+function addCSVSkuRetailFormated(arrayHeader, arrayData, delimiter, fileName) {
+    let csvHeader = arrayHeader.join(delimiter) + '\n';
+    arrayData.forEach(row => {
+        csvHeader += row.sku_format + "\n";
+    });
+    console.log('File Writing comparaison file ....');
+    fs.writeFileSync(fileName, csvHeader);
+    console.log('File Writing comparaison file OK');
+    return true;
+
+}
+
+function addCSVSkuEcomFormated(arrayHeader, arrayData, delimiter, fileName) {
+    let csvHeader = arrayHeader.join(delimiter) + '\n';
+    arrayData.forEach(row => {
+        csvHeader += row.sku_format + "\n";
     });
     console.log('File Writing comparaison file ....');
     fs.writeFileSync(fileName, csvHeader);
